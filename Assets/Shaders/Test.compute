@@ -1,14 +1,31 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
+static const float PI = 3.141592653589793;
+
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
 
-[numthreads(8,8,1)]
+float Time;
+uint2 Size;
+
+float3 HUEtoRGB(in float H)
+{
+	float R = abs(H * 6 - 3) - 1;
+	float G = 2 - abs(H * 6 - 2);
+	float B = 2 - abs(H * 6 - 4);
+	return saturate(float3(R,G,B));
+}
+
+[numthreads(16,16,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-	// TODO: insert actual code here!
+	float angle = atan2((float)id.y - Size.y/2, (float)id.x - Size.x/2);
+	// float angle = 0;
+	angle += Time;
 
-	Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+	float3 color = HUEtoRGB((angle / PI / 2 + 1) % 1);
+
+	Result[id.xy] = float4(color, 1);
 }
