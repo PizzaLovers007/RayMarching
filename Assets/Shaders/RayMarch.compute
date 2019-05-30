@@ -1,0 +1,117 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel RayMarch
+
+static const float EPSILON = 0.000001;
+static const float PI = 3.141592653589793;
+static const int MAX_STEPS = 60;
+static const float FAR_PLANE = 100000;
+
+struct ShapeStruct
+{
+	float3 position;
+	float3 size;
+	uint id;
+};
+
+struct CameraStruct
+{
+	float3 position;
+	float3 right;
+	float3 up;
+	float3 forward;
+};
+
+RWTexture2D<float4> outTexture;
+
+uint2 screenSize;
+float tangent;
+float aspect;
+
+StructuredBuffer<ShapeStruct> shapes;
+StructuredBuffer<CameraStruct> camera;
+uint shapeCount;
+
+float sphereDE(ShapeStruct shapeBuffer, float3 currPos)
+{
+	return distance(shapeBuffer.position, currPos) - shapeBuffer.size.x;
+}
+
+float cubeDE(ShapeStruct shapeBuffer, float3 currPos)
+{
+	float3 d = abs(currPos - shapeBuffer.position) - shapeBuffer.size;
+	return length(max(d, 0)) + min(max(d.x, max(d.y, d.z)), 0);
+}
+
+float tetrahedronDE(ShapeStruct shapeBuffer, float3 currPos)
+{
+	return 0;
+}
+
+float distanceEstimator(ShapeStruct shapeBuffer, float3 currPos)
+{
+	if (shapeBuffer.id == 0)
+	{
+		return sphereDE(shapeBuffer, currPos);
+	}
+	else if (shapeBuffer.id == 1)
+	{
+		return cubeDE(shapeBuffer, currPos);
+	}
+	else if (shapeBuffer.id == 2)
+	{
+		return tetrahedronDE(shapeBuffer, currPos);
+	}
+	else
+	{
+		return sphereDE(shapeBuffer, currPos);
+	}
+}
+
+[numthreads(16,16,1)]
+void RayMarch(uint3 id : SV_DispatchThreadID)
+{
+	// Calculate viewport position
+	float2 viewportPos = id.xy / (screenSize-1.0) * 2 - 1;
+	viewportPos.x *= aspect;
+	viewportPos *= tangent;
+
+	// Create the ray
+	float3 direction = float3(0, 0, 0);
+	direction += camera[0].right * viewportPos.x;
+	direction += camera[0].up * viewportPos.y;
+	direction += camera[0].forward;
+	direction = normalize(direction);
+
+	// March!
+	float3 currPos = camera[0].position;
+	float totalDist = 0;
+	int s;
+	for (s = 0; s < MAX_STEPS; s++)
+	{
+		// Find smallest distance
+		float minDist = 1000000000;
+		for (uint i = 0; i < shapeCount; i++)
+		{
+			minDist = min(minDist, distanceEstimator(shapes[i], currPos));
+		}
+
+		// Move forward
+		currPos += minDist * direction;
+		totalDist += minDist;
+
+		// Check upper and lower bounds for distance
+		if (totalDist > FAR_PLANE || minDist <= EPSILON)
+		{
+			break;
+		}
+	}
+
+	if (totalDist <= FAR_PLANE)
+	{
+		outTexture[id.xy] = float4(1, 0, 0, 1);
+	}
+	else
+	{
+		outTexture[id.xy] = float4(0.2, 0.2, 0.2, 1);
+	}
+}
