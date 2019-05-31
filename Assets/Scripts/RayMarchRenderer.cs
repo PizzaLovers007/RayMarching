@@ -133,7 +133,7 @@ public class RayMarchRenderer : MonoBehaviour
 		shader.SetFloat("aspect", realCamera.aspect);
 
 		// Run shader
-		shader.Dispatch(rayMarchIndex, (Screen.width+15)/16, (Screen.height+15)/16, 1);
+		shader.Dispatch(rayMarchIndex, (Screen.width+31)/32, (Screen.height+15)/16, 1);
 
 		shapeBuffer.Dispose();
 		cameraBuffer.Dispose();

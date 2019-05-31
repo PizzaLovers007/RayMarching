@@ -5,6 +5,9 @@ static const float EPSILON = 0.000001;
 static const float PI = 3.141592653589793;
 static const int MAX_STEPS = 60;
 static const float FAR_PLANE = 100000;
+static const float DELTA = 0.0001;
+
+static const float3 DIR_LIGHT = normalize(float3(1, -1, 1));
 
 struct ShapeStruct
 {
@@ -67,7 +70,41 @@ float distanceEstimator(ShapeStruct shapeBuffer, float3 currPos)
 	}
 }
 
-[numthreads(16,16,1)]
+float4 calculateColor(float3 currPos, float3 camPos)
+{
+	// Normal calculation
+	float pdx = 1000000;
+	float ndx = 1000000;
+	float pdy = 1000000;
+	float ndy = 1000000;
+	float pdz = 1000000;
+	float ndz = 1000000;
+	for (uint i = 0; i < shapeCount; i++)
+	{
+		pdx = min(pdx, distanceEstimator(shapes[i], currPos + float3(DELTA, 0, 0)));
+		ndx = min(ndx, distanceEstimator(shapes[i], currPos - float3(DELTA, 0, 0)));
+		pdy = min(pdy, distanceEstimator(shapes[i], currPos + float3(0, DELTA, 0)));
+		ndy = min(ndy, distanceEstimator(shapes[i], currPos - float3(0, DELTA, 0)));
+		pdz = min(pdz, distanceEstimator(shapes[i], currPos + float3(0, 0, DELTA)));
+		ndz = min(ndz, distanceEstimator(shapes[i], currPos - float3(0, 0, DELTA)));
+	}
+	float3 viewDir = normalize(camPos - currPos);
+	float3 normal = normalize(float3(pdx - ndx, pdy - ndy, pdz - ndz));
+	float3 halfway = normalize(-DIR_LIGHT + viewDir);
+
+	// Ambient
+	float3 ambient = 0.2 * float3(1, 0, 0);
+
+	// Diffuse
+	float3 diffuse = saturate(0.8 * dot(normal, -DIR_LIGHT) * float3(1, 0, 0);
+
+	// Specular
+	float3 specular = 0.6 * pow(abs(dot(normal, halfway)), 30) * float3(1, 1, 1);
+
+	return float4(ambient + diffuse + specular, 1);
+}
+
+[numthreads(32,16,1)]
 void RayMarch(uint3 id : SV_DispatchThreadID)
 {
 	// Calculate viewport position
@@ -108,7 +145,7 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 
 	if (totalDist <= FAR_PLANE)
 	{
-		outTexture[id.xy] = float4(1, 0, 0, 1);
+		outTexture[id.xy] = calculateColor(currPos, camera[0].position);
 	}
 	else
 	{
