@@ -8,13 +8,15 @@ public class RayMarchRenderer : MonoBehaviour
 {
 	public struct ShapeStruct
 	{
-		Vector3 position;
+		Matrix4x4 translateRotateMat;
+		Matrix4x4 translateRotateMatInv;
 		Vector3 size;
 		ShapeType id;
 
-		public ShapeStruct(Vector3 pos, Vector3 sz, ShapeType t)
+		public ShapeStruct(Matrix4x4 trm, Matrix4x4 trmi, Vector3 sz, ShapeType t)
 		{
-			position = pos;
+			translateRotateMat = trm;
+			translateRotateMatInv = trmi;
 			size = sz;
 			id = t;
 		}
@@ -81,6 +83,14 @@ public class RayMarchRenderer : MonoBehaviour
 		}
 	}
 
+	void OnDestroy()
+	{
+		if (renderTexture)
+		{
+			renderTexture.Release();
+		}
+	}
+
 	void InitRenderTexture()
 	{
 		if (renderTexture == null || screenSize.x != Screen.width || screenSize.y != Screen.height)
@@ -116,7 +126,8 @@ public class RayMarchRenderer : MonoBehaviour
 		for (int i = 0; i < shapes.Length; i++)
 		{
 			Shape shape = shapes[i];
-			shapeStructs[i] = new ShapeStruct(shape.transform.position, shape.transform.localScale/2, shape.shapeType);
+			Matrix4x4 translateScaleMat = Matrix4x4.Translate(shape.transform.position) * Matrix4x4.Rotate(shape.transform.rotation);
+			shapeStructs[i] = new ShapeStruct(translateScaleMat, Matrix4x4.Inverse(translateScaleMat), shape.transform.localScale/2, shape.shapeType);
 		}
 		ComputeBuffer shapeBuffer = new ComputeBuffer(shapes.Length, Marshal.SizeOf(typeof(ShapeStruct)));
 		shapeBuffer.SetData(shapeStructs);

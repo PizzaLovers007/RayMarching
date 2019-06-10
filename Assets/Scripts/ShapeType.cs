@@ -3,4 +3,5 @@
 	Sphere,
 	Cube,
 	Tetrahedron,
+	Plane,
 }

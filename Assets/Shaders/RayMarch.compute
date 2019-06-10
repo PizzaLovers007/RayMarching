@@ -8,7 +8,8 @@ static const float3 DIR_LIGHT = normalize(float3(1, -1, 1));
 
 struct ShapeStruct
 {
-	float3 position;
+	float4x4 translateRotateMat;
+	float4x4 translateRotateMatInv;
 	float3 size;
 	uint id;
 };
@@ -34,39 +35,50 @@ StructuredBuffer<ShapeStruct> shapes;
 StructuredBuffer<CameraStruct> camera;
 uint shapeCount;
 
-float sphereDE(ShapeStruct shapeBuffer, float3 currPos)
+float sphereDE(float3 currPos)
 {
-	return distance(shapeBuffer.position, currPos) - shapeBuffer.size.x;
+	return length(currPos) - 1;
 }
 
-float cubeDE(ShapeStruct shapeBuffer, float3 currPos)
+float cubeDE(float3 currPos, float3 size)
 {
-	float3 d = abs(currPos - shapeBuffer.position) - shapeBuffer.size;
+	float3 d = abs(currPos) - size;
 	return length(max(d, 0)) + min(max(d.x, max(d.y, d.z)), 0);
 }
 
-float tetrahedronDE(ShapeStruct shapeBuffer, float3 currPos)
+float tetrahedronDE(float3 currPos)
 {
 	return 0;
 }
 
+float planeDE(float3 currPos, float3 normal)
+{
+	return dot(currPos, normal);
+}
+
 float distanceEstimator(ShapeStruct shapeBuffer, float3 currPos)
 {
+	currPos = mul(shapeBuffer.translateRotateMatInv, float4(currPos, 1)).xyz;
 	if (shapeBuffer.id == 0)
 	{
-		return sphereDE(shapeBuffer, currPos);
+		return sphereDE(currPos/shapeBuffer.size.x)*shapeBuffer.size.x;
 	}
 	else if (shapeBuffer.id == 1)
 	{
-		return cubeDE(shapeBuffer, currPos);
+		return cubeDE(currPos, shapeBuffer.size);
 	}
 	else if (shapeBuffer.id == 2)
 	{
-		return tetrahedronDE(shapeBuffer, currPos);
+		return tetrahedronDE(currPos/shapeBuffer.size.x)*shapeBuffer.size.x;
+	}
+	else if (shapeBuffer.id == 3)
+	{
+		float3 normal = mul(shapeBuffer.translateRotateMat, float4(0, 1, 0, 0)).xyz;
+		return planeDE(currPos, normal);
 	}
 	else
 	{
-		return sphereDE(shapeBuffer, currPos);
+		return sphereDE(currPos);
 	}
 }
 
