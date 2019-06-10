@@ -5,4 +5,5 @@ using UnityEngine;
 public class Shape : MonoBehaviour
 {
 	public ShapeType shapeType;
+	public Color color = Color.white;
 }

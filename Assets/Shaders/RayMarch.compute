@@ -11,6 +11,7 @@ struct ShapeStruct
 	float4x4 translateRotateMat;
 	float4x4 translateRotateMatInv;
 	float3 size;
+	float4 color;
 	uint id;
 };
 
@@ -82,7 +83,7 @@ float distanceEstimator(ShapeStruct shapeBuffer, float3 currPos)
 	}
 }
 
-float4 calculateColor(float3 currPos, float3 camPos)
+float4 calculateColor(float3 currPos, float3 camPos, float4 baseColor)
 {
 	// Normal calculation
 	float pdx = 1000000;
@@ -105,10 +106,10 @@ float4 calculateColor(float3 currPos, float3 camPos)
 	float3 halfway = normalize(-DIR_LIGHT + viewDir);
 
 	// Ambient
-	float3 ambient = 0.2 * float3(1, 0, 0);
+	float3 ambient = 0.2 * baseColor.rgb;
 
 	// Diffuse
-	float3 diffuse = saturate(0.8 * dot(normal, -DIR_LIGHT)) * float3(1, 0, 0);
+	float3 diffuse = saturate(0.8 * dot(normal, -DIR_LIGHT)) * baseColor.rgb;
 
 	// Specular
 	float3 specular = 0.6 * pow(abs(dot(normal, halfway)), 30) * float3(1, 1, 1);
@@ -135,13 +136,20 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 	float3 currPos = camera[0].position;
 	float totalDist = 0;
 	int s;
+	int hitIndex = -1;
 	for (s = 0; s < maxSteps; s++)
 	{
 		// Find smallest distance
 		float minDist = 1000000000;
+		int index = -1;
 		for (uint i = 0; i < shapeCount; i++)
 		{
-			minDist = min(minDist, distanceEstimator(shapes[i], currPos));
+			float dist = distanceEstimator(shapes[i], currPos);
+			if (dist < minDist)
+			{
+				minDist = dist;
+				index = i;
+			}
 		}
 
 		// Move forward
@@ -151,13 +159,14 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 		// Check if hit object
 		if (minDist <= epsilon)
 		{
+			hitIndex = index;
 			break;
 		}
 	}
 
 	if (totalDist <= FAR_PLANE)
 	{
-		outTexture[id.xy] = calculateColor(currPos, camera[0].position);
+		outTexture[id.xy] = calculateColor(currPos, camera[0].position, shapes[hitIndex].color);
 		// float grayscale = 1 - float(s)/float(maxSteps);
 		// outTexture[id.xy] = float4(grayscale, grayscale, grayscale, 1);
 	}

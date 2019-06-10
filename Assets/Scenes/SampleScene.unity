@@ -211,6 +211,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shapeType: 1
+  color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &170076733
 GameObject:
   m_ObjectHideFlags: 0
@@ -308,6 +309,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shapeType: 0
+  color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!135 &202908607
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -524,7 +526,7 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1361539544}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.01, y: -2.0000055, z: 6.03}
   m_LocalScale: {x: 100, y: 100, z: 100}
   m_Children: []
@@ -599,6 +601,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shapeType: 3
+  color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &1375728362
 GameObject:
   m_ObjectHideFlags: 0
