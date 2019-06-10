@@ -52,6 +52,9 @@ public class RayMarchRenderer : MonoBehaviour
 	public Camera realCamera;
 	public Camera screenCamera;
 	public GameObject screen;
+	public float epsilon = 0.000001f;
+	public float delta = 0.0001f;
+	public int maxSteps = 128;
 
 	int rayMarchIndex = -1;
 	Shape[] shapes;
@@ -71,9 +74,9 @@ public class RayMarchRenderer : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		InitRenderTexture();
 		if (rayMarchIndex != -1)
 		{
+			InitRenderTexture();
 			DoRayMarch();
 		}
 	}
@@ -131,6 +134,9 @@ public class RayMarchRenderer : MonoBehaviour
 		shader.SetInts("screenSize", Screen.width, Screen.height);
 		shader.SetFloat("tangent", tan);
 		shader.SetFloat("aspect", realCamera.aspect);
+		shader.SetFloat("epsilon", epsilon);
+		shader.SetFloat("delta", delta);
+		shader.SetInt("maxSteps", maxSteps);
 
 		// Run shader
 		shader.Dispatch(rayMarchIndex, (Screen.width+31)/32, (Screen.height+15)/16, 1);
