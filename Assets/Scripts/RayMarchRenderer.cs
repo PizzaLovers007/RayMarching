@@ -13,14 +13,16 @@ public class RayMarchRenderer : MonoBehaviour
 		Vector3 size;
 		Color color;
 		ShapeType id;
+		AlterationType alterId;
 
-		public ShapeStruct(Matrix4x4 trm, Matrix4x4 trmi, Vector3 sz, Color col, ShapeType t)
+		public ShapeStruct(Matrix4x4 trm, Matrix4x4 trmi, Vector3 sz, Color col, ShapeType t, AlterationType at)
 		{
 			translateRotateMat = trm;
 			translateRotateMatInv = trmi;
 			color = col;
 			size = sz;
 			id = t;
+			alterId = at;
 		}
 	}
 
@@ -134,7 +136,8 @@ public class RayMarchRenderer : MonoBehaviour
 				Matrix4x4.Inverse(translateScaleMat),
 				shape.transform.localScale/2,
 				shape.color,
-				shape.shapeType);
+				shape.shapeType,
+				shape.alterationType);
 		}
 		ComputeBuffer shapeBuffer = new ComputeBuffer(shapes.Length, Marshal.SizeOf(typeof(ShapeStruct)));
 		shapeBuffer.SetData(shapeStructs);
