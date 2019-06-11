@@ -2,7 +2,7 @@
 #pragma kernel RayMarch
 
 static const float PI = 3.141592653589793;
-static const float FAR_PLANE = 100000;
+static const float FAR_PLANE = 1000;
 
 static const float3 DIR_LIGHT = normalize(float3(1, -1, 1));
 
@@ -31,6 +31,8 @@ float tangent;
 float aspect;
 float epsilon;
 float delta;
+float fogDistance;
+float3 fogColor;
 int maxSteps;
 
 StructuredBuffer<ShapeStruct> shapes;
@@ -66,7 +68,7 @@ float cubeDE(float3 currPos, float3 size)
 
 float tetrahedronDE(float3 currPos)
 {
-	return 0;
+	return 1;
 }
 
 float planeDE(float3 currPos, float3 normal)
@@ -123,7 +125,7 @@ float4 calculateColor(float3 currPos, float3 camPos, float4 baseColor)
 	float3 halfway = normalize(-DIR_LIGHT + viewDir);
 
 	// Ambient
-	float3 ambient = 0.2 * baseColor.rgb;
+	float3 ambient = 0.5 * baseColor.rgb;
 
 	// Diffuse
 	float3 diffuse = saturate(0.8 * dot(normal, -DIR_LIGHT)) * baseColor.rgb;
@@ -158,14 +160,14 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 	{
 		// Find smallest distance
 		float minDist = 1000000000;
-		int index = -1;
+		hitIndex = -1;
 		for (uint i = 0; i < shapeCount; i++)
 		{
 			float dist = distanceEstimator(shapes[i], currPos);
 			if (dist < minDist)
 			{
 				minDist = dist;
-				index = i;
+				hitIndex = i;
 			}
 		}
 
@@ -176,19 +178,34 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 		// Check if hit object
 		if (minDist <= epsilon)
 		{
-			hitIndex = index;
 			break;
 		}
 	}
 
 	if (totalDist <= FAR_PLANE)
 	{
-		outTexture[id.xy] = calculateColor(currPos, camera[0].position, shapes[hitIndex].color);
+		// Initial color
+		float4 finalColor = float4(fogColor, 1);
+		if (hitIndex != -1)
+		{
+			finalColor = shapes[hitIndex].color;
+		}
+
+		// Blinn-Phong lighting
+		finalColor = calculateColor(currPos, camera[0].position, finalColor);
+
+		// Grayscale lighting
 		// float grayscale = 1 - float(s)/float(maxSteps);
-		// outTexture[id.xy] = float4(grayscale, grayscale, grayscale, 1);
+		// finalColor = float4(grayscale, grayscale, grayscale, 1);
+
+		// Add fog
+		float fogFactor = saturate(totalDist / fogDistance);
+		finalColor = fogFactor * float4(fogColor, 1) + (1 - fogFactor) * finalColor;
+
+		outTexture[id.xy] = finalColor;
 	}
 	else
 	{
-		outTexture[id.xy] = float4(0.2, 0.2, 0.2, 1);
+		outTexture[id.xy] = float4(fogColor, 1);
 	}
 }

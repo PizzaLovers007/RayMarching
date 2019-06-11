@@ -211,6 +211,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shapeType: 1
+  alterationType: 0
   color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &170076733
 GameObject:
@@ -309,6 +310,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shapeType: 0
+  alterationType: 0
   color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!135 &202908607
 SphereCollider:
@@ -499,9 +501,11 @@ MonoBehaviour:
   realCamera: {fileID: 534669904}
   screenCamera: {fileID: 1375728364}
   screen: {fileID: 1410191636}
-  epsilon: 0.000001
+  epsilon: 0.0001
   delta: 0.0001
-  maxSteps: 32
+  fogDistance: 500
+  fogColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
+  maxSteps: 128
 --- !u!4 &893754416
 Transform:
   m_ObjectHideFlags: 0
@@ -533,7 +537,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1361539545
 Transform:
   m_ObjectHideFlags: 0
@@ -615,7 +619,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shapeType: 3
-  color: {r: 1, g: 1, b: 1, a: 1}
+  alterationType: 0
+  color: {r: 0.8113208, g: 0.8113208, b: 0.8113208, a: 1}
 --- !u!1 &1375728362
 GameObject:
   m_ObjectHideFlags: 0

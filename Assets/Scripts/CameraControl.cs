@@ -64,7 +64,5 @@ public class CameraControl : MonoBehaviour
 		{
 			transform.Rotate(Vector3.up, -turnSpeed * Time.deltaTime, Space.World);
 		}
-
-		Debug.Log(transform.right);
 	}
 }

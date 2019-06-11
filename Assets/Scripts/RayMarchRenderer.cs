@@ -58,8 +58,10 @@ public class RayMarchRenderer : MonoBehaviour
 	public Camera realCamera;
 	public Camera screenCamera;
 	public GameObject screen;
-	public float epsilon = 0.000001f;
+	public float epsilon = 0.0001f;
 	public float delta = 0.0001f;
+	public float fogDistance = 500;
+	public Color fogColor = new Color(0.2f, 0.2f, 0.2f, 1);
 	public int maxSteps = 128;
 
 	int rayMarchIndex = -1;
@@ -157,6 +159,8 @@ public class RayMarchRenderer : MonoBehaviour
 		shader.SetFloat("aspect", realCamera.aspect);
 		shader.SetFloat("epsilon", epsilon);
 		shader.SetFloat("delta", delta);
+		shader.SetFloat("fogDistance", fogDistance);
+		shader.SetFloats("fogColor", fogColor.r, fogColor.g, fogColor.b);
 		shader.SetInt("maxSteps", maxSteps);
 
 		// Run shader
