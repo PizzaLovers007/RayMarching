@@ -38,7 +38,15 @@ public class CameraControl : MonoBehaviour
 		{
 			moveDirection -= transform.up;
 		}
-		transform.position += moveDirection.normalized * moveSpeed * Time.deltaTime;
+
+		if (Input.GetKey(KeyCode.LeftShift))
+		{
+			transform.position += moveDirection.normalized * 2 * moveSpeed * Time.deltaTime;
+		}
+		else
+		{
+			transform.position += moveDirection.normalized * moveSpeed * Time.deltaTime;
+		}
 
 		if (Input.GetKey(KeyCode.I))
 		{
