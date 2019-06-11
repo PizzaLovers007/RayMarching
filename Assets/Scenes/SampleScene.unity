@@ -387,6 +387,7 @@ GameObject:
   - component: {fileID: 534669905}
   - component: {fileID: 534669904}
   - component: {fileID: 534669903}
+  - component: {fileID: 534669906}
   m_Layer: 0
   m_Name: Real Camera
   m_TagString: Untagged
@@ -447,13 +448,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 534669902}
-  m_LocalRotation: {x: 0.26521522, y: -0, z: -0, w: 0.96418923}
-  m_LocalPosition: {x: 0, y: 2.84, z: -11.54}
+  m_LocalRotation: {x: 0.1572615, y: -0, z: -0, w: 0.987557}
+  m_LocalPosition: {x: 0, y: 2.84, z: -12.25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 30.760002, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 18.096, y: 0, z: 0}
+--- !u!114 &534669906
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 534669902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82447b683a03b483f9ce7f7418a008c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 2
+  turnSpeed: 70
 --- !u!1 &893754414
 GameObject:
   m_ObjectHideFlags: 0
@@ -487,7 +501,7 @@ MonoBehaviour:
   screen: {fileID: 1410191636}
   epsilon: 0.000001
   delta: 0.0001
-  maxSteps: 128
+  maxSteps: 32
 --- !u!4 &893754416
 Transform:
   m_ObjectHideFlags: 0
@@ -519,7 +533,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1361539545
 Transform:
   m_ObjectHideFlags: 0
