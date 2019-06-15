@@ -259,12 +259,31 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 			// finalColor = float4(grayscale, grayscale, grayscale, 1);
 		}
 
-		// Add shadows
+		// Add hard shadows
 		MarchResult shadowResult = march(objResult.position - FAR_PLANE/2 * LIGHT_DIRECTION, LIGHT_DIRECTION);
 		if (shadowResult.distance <= FAR_PLANE && objResult.hitIndex != shadowResult.hitIndex)
 		{
 			finalColor *= 0.4;
 		}
+
+		// Add ambient occlusion
+		float aoFactor = 0;
+		float3 normal = calculateNormal(objResult.position);
+		for (int a = 5; a >= 1; a--)
+		{
+			// Find min distance
+			float minDist = 1000000000;
+			for (uint i = 0; i < shapeCount; i++)
+			{
+				minDist = min(minDist, distanceEstimator(shapes[i], objResult.position + normal * a * 0.2));
+			}
+
+			// Calculate next ambient occlusion step
+			aoFactor += a * 0.2 - minDist;
+			aoFactor *= 0.5;
+		}
+		aoFactor = 1 - 0.7 * aoFactor;
+		finalColor *= aoFactor;
 
 		// Add fog
 		float fogFactor = saturate(objResult.distance / fogDistance);
