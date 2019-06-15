@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657838, g: 0.49641234, b: 0.57481676, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -213,6 +213,7 @@ MonoBehaviour:
   shapeType: 1
   alterationType: 0
   color: {r: 1, g: 1, b: 1, a: 1}
+  reflective: 0
 --- !u!1 &170076733
 GameObject:
   m_ObjectHideFlags: 0
@@ -312,6 +313,7 @@ MonoBehaviour:
   shapeType: 0
   alterationType: 0
   color: {r: 1, g: 1, b: 1, a: 1}
+  reflective: 0
 --- !u!135 &202908607
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -468,7 +470,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82447b683a03b483f9ce7f7418a008c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 2
+  moveSpeed: 3
   turnSpeed: 70
 --- !u!1 &893754414
 GameObject:
@@ -503,9 +505,10 @@ MonoBehaviour:
   screen: {fileID: 1410191636}
   epsilon: 0.0001
   delta: 0.0001
-  fogDistance: 500
-  fogColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
-  maxSteps: 128
+  fogDistance: 200
+  fogColor: {r: 0.36320752, g: 0.44486803, b: 1, a: 1}
+  maxSteps: 512
+  maxBounces: 4
 --- !u!4 &893754416
 Transform:
   m_ObjectHideFlags: 0
@@ -621,6 +624,7 @@ MonoBehaviour:
   shapeType: 3
   alterationType: 0
   color: {r: 0.8113208, g: 0.8113208, b: 0.8113208, a: 1}
+  reflective: 0
 --- !u!1 &1375728362
 GameObject:
   m_ObjectHideFlags: 0
@@ -794,7 +798,7 @@ Transform:
   m_GameObject: {fileID: 1410191636}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 5}
-  m_LocalScale: {x: 20, y: 10, z: 1}
+  m_LocalScale: {x: 25, y: 10, z: 1}
   m_Children: []
   m_Father: {fileID: 1375728363}
   m_RootOrder: 0

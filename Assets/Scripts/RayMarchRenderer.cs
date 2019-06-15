@@ -14,8 +14,9 @@ public class RayMarchRenderer : MonoBehaviour
 		Color color;
 		ShapeType id;
 		AlterationType alterId;
+		int reflective;
 
-		public ShapeStruct(Matrix4x4 trm, Matrix4x4 trmi, Vector3 sz, Color col, ShapeType t, AlterationType at)
+		public ShapeStruct(Matrix4x4 trm, Matrix4x4 trmi, Vector3 sz, Color col, ShapeType t, AlterationType at, int r)
 		{
 			translateRotateMat = trm;
 			translateRotateMatInv = trmi;
@@ -23,6 +24,7 @@ public class RayMarchRenderer : MonoBehaviour
 			size = sz;
 			id = t;
 			alterId = at;
+			reflective = r;
 		}
 	}
 
@@ -63,11 +65,14 @@ public class RayMarchRenderer : MonoBehaviour
 	public float fogDistance = 500;
 	public Color fogColor = new Color(0.2f, 0.2f, 0.2f, 1);
 	public int maxSteps = 128;
+	public int maxBounces = 4;
 
 	int rayMarchIndex = -1;
 	Shape[] shapes;
 	Vector2Int screenSize;
 	RenderTexture renderTexture;
+	ComputeBuffer shapeBuffer;
+	ComputeBuffer cameraBuffer;
 
 	// Use this for initialization
 	void Start()
@@ -94,6 +99,9 @@ public class RayMarchRenderer : MonoBehaviour
 		if (renderTexture)
 		{
 			renderTexture.Release();
+			
+			shapeBuffer.Dispose();
+			cameraBuffer.Dispose();
 		}
 	}
 
@@ -105,6 +113,9 @@ public class RayMarchRenderer : MonoBehaviour
 			if (renderTexture)
 			{
 				renderTexture.Release();
+			
+				shapeBuffer.Dispose();
+				cameraBuffer.Dispose();
 			}
 
 			// Screen size changed, update texture size
@@ -122,6 +133,9 @@ public class RayMarchRenderer : MonoBehaviour
 			Material screenMaterial = new Material(Shader.Find("Unlit/Texture"));
 			screenMaterial.SetTexture("_MainTex", renderTexture);
 			screen.GetComponent<MeshRenderer>().material = screenMaterial;
+			
+			shapeBuffer = new ComputeBuffer(shapes.Length, Marshal.SizeOf(typeof(ShapeStruct)));
+			cameraBuffer = new ComputeBuffer(1, Marshal.SizeOf(typeof(CameraStruct)));
 		}
 	}
 
@@ -139,11 +153,10 @@ public class RayMarchRenderer : MonoBehaviour
 				shape.transform.localScale/2,
 				shape.color,
 				shape.shapeType,
-				shape.alterationType);
+				shape.alterationType,
+				shape.reflective ? 1 : 0);
 		}
-		ComputeBuffer shapeBuffer = new ComputeBuffer(shapes.Length, Marshal.SizeOf(typeof(ShapeStruct)));
 		shapeBuffer.SetData(shapeStructs);
-		ComputeBuffer cameraBuffer = new ComputeBuffer(1, Marshal.SizeOf(typeof(CameraStruct)));
 		CameraStruct camStruct = new CameraStruct(realCamera.transform.position, realCamera.transform.right, realCamera.transform.up, realCamera.transform.forward);
 		cameraBuffer.SetData(new CameraStruct[1] { camStruct });
 		
@@ -162,11 +175,9 @@ public class RayMarchRenderer : MonoBehaviour
 		shader.SetFloat("fogDistance", fogDistance);
 		shader.SetFloats("fogColor", fogColor.r, fogColor.g, fogColor.b);
 		shader.SetInt("maxSteps", maxSteps);
+		shader.SetInt("maxBounces", maxBounces);
 
 		// Run shader
 		shader.Dispatch(rayMarchIndex, (Screen.width+31)/32, (Screen.height+15)/16, 1);
-
-		shapeBuffer.Dispose();
-		cameraBuffer.Dispose();
 	}
 }
