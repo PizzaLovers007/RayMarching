@@ -2,10 +2,6 @@
 #pragma kernel RayMarch
 
 static const float PI = 3.141592653589793;
-static const float FAR_PLANE = 1000;
-
-static const float3 LIGHT_DIRECTION = normalize(float3(1, -1, 1));
-static const float3 LIGHT_COLOR = float3(1, 1, 1);
 
 struct ShapeStruct
 {
@@ -34,6 +30,16 @@ struct MarchResult
 	float3 position;
 };
 
+struct LightStruct
+{
+	float3 position;
+	float3 direction;
+	float4 color;
+	float range;
+	float cosAngle;
+	uint id;
+};
+
 RWTexture2D<float4> outTexture;
 
 uint2 screenSize;
@@ -41,6 +47,7 @@ float tangent;
 float aspect;
 float epsilon;
 float delta;
+float farPlane;
 float fogDistance;
 float3 fogColor;
 int maxSteps;
@@ -48,6 +55,7 @@ int maxBounces;
 
 StructuredBuffer<ShapeStruct> shapes;
 StructuredBuffer<CameraStruct> camera;
+StructuredBuffer<LightStruct> light;
 uint shapeCount;
 
 float3 alteration(ShapeStruct shapeBuffer, float3 pos)
@@ -133,25 +141,50 @@ float3 calculateNormal(float3 currPos)
 	return normalize(float3(pdx - ndx, pdy - ndy, pdz - ndz));
 }
 
+float3 calculateLightDirection(float3 currPos)
+{
+	if (light[0].id == 0)
+	{
+		// Spotlight
+		return normalize(light[0].position - currPos);
+	}
+	else if (light[0].id == 1)
+	{
+		// Directional
+		return -light[0].direction;
+	}
+	else if (light[0].id == 2)
+	{
+		// Point
+		return normalize(light[0].position - currPos);
+	}
+	else
+	{
+		// Default to directional light
+		return normalize(float3(-1, 1, -1));
+	}
+}
+
 float4 calculateColor(float3 currPos, float4 baseColor)
 {
+	float3 lightDir = calculateLightDirection(currPos);
 	float3 viewDir = normalize(camera[0].position - currPos);
 	float3 normal = calculateNormal(currPos);
-	float3 halfway = normalize(-LIGHT_DIRECTION + viewDir);
+	float3 halfway = normalize(lightDir + viewDir);
 
 	// Ambient
 	float3 ambient = 0.5 * baseColor.rgb;
 
 	// Diffuse
-	float3 diffuse = saturate(0.8 * dot(normal, -LIGHT_DIRECTION)) * baseColor.rgb;
+	float3 diffuse = saturate(0.5 * dot(normal, lightDir)) * baseColor.rgb;
 
 	// Specular
-	float3 specular = 0.6 * pow(abs(dot(normal, halfway)), 30) * LIGHT_COLOR;
+	float3 specular = 0.0 * pow(abs(dot(normal, halfway)), 10) * light[0].color.rgb;
 
 	return float4(ambient + diffuse + specular, 1);
 }
 
-MarchResult march(float3 startPos, float3 direction)
+MarchResult march(float3 startPos, float3 direction, float maxDistance)
 {
 	float3 currPos = startPos;
 	float totalDist = 0;
@@ -178,7 +211,7 @@ MarchResult march(float3 startPos, float3 direction)
 		totalDist += minDist;
 
 		// Check if hit object
-		if (minDist <= epsilon)
+		if (minDist <= epsilon || totalDist > maxDistance)
 		{
 			break;
 		}
@@ -208,12 +241,12 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 	direction += camera[0].forward;
 	direction = normalize(direction);
 
-	MarchResult objResult = march(camera[0].position, direction);
+	MarchResult objResult = march(camera[0].position, direction, farPlane);
 
 	// Initial color
 	float4 finalColor = float4(fogColor, 1);
 
-	if (objResult.distance <= FAR_PLANE)
+	if (objResult.distance <= farPlane)
 	{
 		// Check for reflective object
 		if (objResult.hitIndex != -1 && shapes[objResult.hitIndex].reflective)
@@ -226,14 +259,14 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 			{
 				float3 normal = calculateNormal(reflectResult.position);
 				bounceDirection -= dot(bounceDirection, normal) * normal * 2;
-				reflectResult = march(reflectResult.position + epsilon * 10 * bounceDirection, bounceDirection);
+				reflectResult = march(reflectResult.position + epsilon * 10 * bounceDirection, bounceDirection, farPlane);
 				totalDist += reflectResult.distance;
 				// objResult.distance += reflectResult.distance;
 				numBounces++;
 			} while (reflectResult.hitIndex != -1 && shapes[reflectResult.hitIndex].reflective && numBounces < maxBounces);
 
 			// Blinn-Phong lighting
-			if (reflectResult.hitIndex != -1 && reflectResult.distance <= FAR_PLANE)
+			if (reflectResult.hitIndex != -1 && reflectResult.distance <= farPlane)
 			{
 				finalColor = calculateColor(reflectResult.position, shapes[reflectResult.hitIndex].color);
 			}
@@ -243,7 +276,7 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 			finalColor = fogFactor * float4(fogColor, 1) + (1 - fogFactor) * finalColor;
 
 			// Add tint
-			finalColor = lerp(finalColor, finalColor * shapes[objResult.hitIndex].color, 0.8);
+			finalColor = lerp(finalColor, finalColor * shapes[objResult.hitIndex].color, 0.8) + shapes[objResult.hitIndex].color * 0.1;
 		}
 		// Otherwise non-reflective object
 		else
@@ -260,13 +293,16 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 		}
 
 		// Add hard shadows
-		MarchResult shadowResult = march(objResult.position - FAR_PLANE/2 * LIGHT_DIRECTION, LIGHT_DIRECTION);
-		if (shadowResult.distance <= FAR_PLANE && objResult.hitIndex != shadowResult.hitIndex)
+		float3 lightDir = calculateLightDirection(objResult.position);
+		MarchResult shadowResult = march(objResult.position + epsilon * 10 * lightDir, lightDir, farPlane);
+		if (shadowResult.distance <= farPlane && objResult.hitIndex != shadowResult.hitIndex)
 		{
-			finalColor *= 0.4;
+			finalColor *= 0.5;
 		}
 
 		// Add ambient occlusion
+		const float aoDelta = 0.1;
+		const float aoK = 1;
 		float aoFactor = 0;
 		float3 normal = calculateNormal(objResult.position);
 		for (int a = 5; a >= 1; a--)
@@ -275,14 +311,14 @@ void RayMarch(uint3 id : SV_DispatchThreadID)
 			float minDist = 1000000000;
 			for (uint i = 0; i < shapeCount; i++)
 			{
-				minDist = min(minDist, distanceEstimator(shapes[i], objResult.position + normal * a * 0.2));
+				minDist = min(minDist, distanceEstimator(shapes[i], objResult.position + normal * a * aoDelta));
 			}
 
 			// Calculate next ambient occlusion step
-			aoFactor += a * 0.2 - minDist;
+			aoFactor += a * aoDelta - minDist;
 			aoFactor *= 0.5;
 		}
-		aoFactor = 1 - 0.7 * aoFactor;
+		aoFactor = 1 - aoK * aoFactor;
 		finalColor *= aoFactor;
 
 		// Add fog

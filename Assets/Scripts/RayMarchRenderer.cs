@@ -56,12 +56,33 @@ public class RayMarchRenderer : MonoBehaviour
 		}
 	}
 
+	public struct LightStruct
+	{
+		Vector3 position;
+		Vector3 direction;
+		Color color;
+		float range;
+		float cosSpotAngle;
+		LightType id;
+
+		public LightStruct(Vector3 pos, Vector3 dir, Color c, float r, float csa, LightType t)
+		{
+			position = pos;
+			direction = dir;
+			color = c;
+			range = r;
+			cosSpotAngle = csa;
+			id = t;
+		}
+	}
+
 	public ComputeShader shader;
 	public Camera realCamera;
 	public Camera screenCamera;
 	public GameObject screen;
 	public float epsilon = 0.0001f;
 	public float delta = 0.0001f;
+	public float farPlane = 1000;
 	public float fogDistance = 500;
 	public Color fogColor = new Color(0.2f, 0.2f, 0.2f, 1);
 	public int maxSteps = 128;
@@ -69,10 +90,12 @@ public class RayMarchRenderer : MonoBehaviour
 
 	int rayMarchIndex = -1;
 	Shape[] shapes;
+	Light sceneLight;
 	Vector2Int screenSize;
 	RenderTexture renderTexture;
 	ComputeBuffer shapeBuffer;
 	ComputeBuffer cameraBuffer;
+	ComputeBuffer lightBuffer;
 
 	// Use this for initialization
 	void Start()
@@ -82,6 +105,9 @@ public class RayMarchRenderer : MonoBehaviour
 		
 		// Get all shapes in the scene
 		shapes = GameObject.FindObjectsOfType<Shape>();
+
+		// Get all lights in the scene
+		sceneLight = GameObject.FindObjectOfType<Light>();
 	}
 
 	// Update is called once per frame
@@ -102,6 +128,7 @@ public class RayMarchRenderer : MonoBehaviour
 			
 			shapeBuffer.Dispose();
 			cameraBuffer.Dispose();
+			lightBuffer.Dispose();
 		}
 	}
 
@@ -116,6 +143,7 @@ public class RayMarchRenderer : MonoBehaviour
 			
 				shapeBuffer.Dispose();
 				cameraBuffer.Dispose();
+				lightBuffer.Dispose();
 			}
 
 			// Screen size changed, update texture size
@@ -136,12 +164,13 @@ public class RayMarchRenderer : MonoBehaviour
 			
 			shapeBuffer = new ComputeBuffer(shapes.Length, Marshal.SizeOf(typeof(ShapeStruct)));
 			cameraBuffer = new ComputeBuffer(1, Marshal.SizeOf(typeof(CameraStruct)));
+			lightBuffer = new ComputeBuffer(1, Marshal.SizeOf(typeof(LightStruct)));
 		}
 	}
 
 	void DoRayMarch()
 	{
-		// Create buffer to send to shader
+		// Send shapes to GPU
 		ShapeStruct[] shapeStructs = new ShapeStruct[shapes.Length];
 		for (int i = 0; i < shapes.Length; i++)
 		{
@@ -157,8 +186,20 @@ public class RayMarchRenderer : MonoBehaviour
 				shape.reflective ? 1 : 0);
 		}
 		shapeBuffer.SetData(shapeStructs);
+
+		// Send camera to GPU
 		CameraStruct camStruct = new CameraStruct(realCamera.transform.position, realCamera.transform.right, realCamera.transform.up, realCamera.transform.forward);
 		cameraBuffer.SetData(new CameraStruct[1] { camStruct });
+
+		// Send lights to GPU
+		LightStruct lightStruct = new LightStruct(
+			sceneLight.transform.position,
+			sceneLight.transform.forward,
+			sceneLight.color,
+			sceneLight.range,
+			Mathf.Cos(sceneLight.spotAngle * Mathf.Deg2Rad),
+			sceneLight.type);
+		lightBuffer.SetData(new LightStruct[1] { lightStruct });
 		
 		// CPU calculations
 		float tan = Mathf.Tan(realCamera.fieldOfView * Mathf.Deg2Rad / 2);
@@ -166,12 +207,14 @@ public class RayMarchRenderer : MonoBehaviour
 		// Set shader data
 		shader.SetBuffer(rayMarchIndex, "shapes", shapeBuffer);
 		shader.SetBuffer(rayMarchIndex, "camera", cameraBuffer);
+		shader.SetBuffer(rayMarchIndex, "light", lightBuffer);
 		shader.SetInt("shapeCount", shapes.Length);
 		shader.SetInts("screenSize", Screen.width, Screen.height);
 		shader.SetFloat("tangent", tan);
 		shader.SetFloat("aspect", realCamera.aspect);
 		shader.SetFloat("epsilon", epsilon);
 		shader.SetFloat("delta", delta);
+		shader.SetFloat("farPlane", farPlane);
 		shader.SetFloat("fogDistance", fogDistance);
 		shader.SetFloats("fogColor", fogColor.r, fogColor.g, fogColor.b);
 		shader.SetInt("maxSteps", maxSteps);
